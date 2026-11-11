@@ -1,0 +1,20 @@
+# ==============================================================================
+# ARCHIVO: 04-backend-service.yaml
+# DESCRIPCIÓN: Expone el Backend hacia el exterior del clúster mediante NodePort
+# ==============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  labels:
+    app: backend
+spec:
+  type: NodePort             # Abre un puerto estático (30000-32767) en la IP del nodo Minikube
+  selector:
+    app: backend             # Enruta el tráfico hacia los Pods con label app=backend
+  ports:
+    - protocol: TCP
+      port: 3000             # Puerto interno del Service (ClusterIP)
+      targetPort: 3000       # Puerto en el que escucha el contenedor Node.js
+      nodePort: 30080        # Puerto externo fijo expuesto en el nodo de Minikube
+

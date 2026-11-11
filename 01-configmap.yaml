@@ -1,0 +1,19 @@
+# ==============================================================================
+# ARCHIVO: 01-configmap.yaml
+# DESCRIPCIÓN: Define parámetros de configuración NO sensibles para la aplicación
+# ==============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  labels:
+    app: backend
+    tier: configuration
+data:
+  # Nombre del Service ClusterIP de MongoDB (resolución vía CoreDNS interno)
+  DB_HOST: "mongo-service"
+  # Nombre de la base de datos de la aplicación
+  DB_NAME: "academiadb"
+  # Puerto en el que escuchará el servidor Backend Node.js (como string)
+  PORT: "3000"
+

@@ -1,0 +1,112 @@
+# ==============================================================================
+# ARCHIVO: 03-backend.yaml
+# DESCRIPCIÓN: Deployment del Backend (Node.js) inyectando ConfigMap y Secret
+#              mediante envFrom (carga masiva) y valueFrom (carga selectiva).
+# ==============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deployment
+  labels:
+    app: backend
+    tier: api
+spec:
+  replicas: 2                # Alta disponibilidad con 2 réplicas del Backend
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+        tier: api
+    spec:
+      containers:
+        - name: backend-nodejs
+          image: node:20-alpine
+          workingDir: /app
+          # Instala el driver oficial de MongoDB e inicia la API HTTP usando solo variables de entorno
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              npm init -y >/dev/null 2>&1 && npm install mongodb >/dev/null 2>&1
+              cat << 'EOF' > server.js
+              const http = require('http');
+              const { MongoClient } = require('mongodb');
+
+              // Lectura exclusiva desde variables de entorno (CERO credenciales hardcodeadas)
+              const PORT = process.env.PORT || 3000;
+              const DB_HOST = process.env.DB_HOST;
+              const DB_NAME = process.env.DB_NAME;
+              const DB_USER = process.env.DB_USER;
+              const DB_PASSWORD = process.env.DB_PASSWORD;
+
+              const uri = `mongodb://${encodeURIComponent(DB_USER)}:${encodeURIComponent(DB_PASSWORD)}@${DB_HOST}:27017/${DB_NAME}?authSource=admin`;
+              const client = new MongoClient(uri, { serverSelectionTimeoutMS: 3000 });
+
+              const server = http.createServer(async (req, res) => {
+                res.setHeader('Content-Type', 'application/json; charset=utf-8');
+                try {
+                  await client.connect();
+                  await client.db(DB_NAME).command({ ping: 1 });
+                  res.writeHead(200);
+                  res.end(JSON.stringify({
+                    status: "OK",
+                    mensaje: "Conexión exitosa a MongoDB sin credenciales hardcodeadas",
+                    pod: process.env.HOSTNAME,
+                    configuracion_configmap: {
+                      DB_HOST,
+                      DB_NAME,
+                      PORT
+                    },
+                    credenciales_secret: {
+                      DB_USER,
+                      DB_PASSWORD_CARGADA: Boolean(DB_PASSWORD)
+                    }
+                  }, null, 2));
+                } catch (error) {
+                  res.writeHead(500);
+                  res.end(JSON.stringify({
+                    status: "ERROR",
+                    mensaje: "Fallo al conectar con MongoDB",
+                    detalle: error.message
+                  }, null, 2));
+                }
+              });
+
+              server.listen(PORT, () => {
+                console.log(`[BACKEND] Servidor escuchando en puerto ${PORT}`);
+                console.log(`[CONFIG] Conectando a host=${DB_HOST} | db=${DB_NAME} | user=${DB_USER}`);
+              });
+              EOF
+              node server.js
+          ports:
+            - containerPort: 3000
+              name: http-port
+
+          # MÉTODO 1: envFrom -> Inyecta TODAS las claves del ConfigMap como variables de entorno
+          # Carga automáticamente: DB_HOST, DB_NAME y PORT
+          envFrom:
+            - configMapRef:
+                name: app-config
+
+          # MÉTODO 2: valueFrom -> Inyecta claves específicas desde el Secret (o ConfigMap)
+          env:
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: DB_PASSWORD
+
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "300m"
