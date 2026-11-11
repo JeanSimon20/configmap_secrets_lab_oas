@@ -1,8 +1,4 @@
-# ==============================================================================
-# ARCHIVO: service-demo.yaml
-# DESCRIPCIÓN: Service de tipo NodePort para exponer el Pod hacia el navegador
-#              en Minikube (Equivalente declarativo del Paso 5B).
-# ==============================================================================
+# Servicio NodePort para exponer el Pod en Minikube (Paso 5B)
 apiVersion: v1
 kind: Service
 metadata:
@@ -19,4 +15,3 @@ spec:
       port: 80
       targetPort: 80
       nodePort: 30080
-

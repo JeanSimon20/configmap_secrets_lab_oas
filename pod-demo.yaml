@@ -1,9 +1,4 @@
-# ==============================================================================
-# ARCHIVO: pod-demo.yaml
-# DESCRIPCIÓN: Pod de demostración (Live-Coding) que inyecta todas las claves
-#              de un ConfigMap y un Secret simultáneamente usando envFrom, y
-#              renderiza un Dashboard HTML en vivo con las variables inyectadas.
-# ==============================================================================
+# Pod de prueba que consume el ConfigMap y el Secret mediante envFrom (Paso 4)
 apiVersion: v1
 kind: Pod
 metadata:
@@ -18,7 +13,6 @@ spec:
       image: nginx:alpine
       ports:
         - containerPort: 80
-      # Genera un Dashboard visual con las variables inyectadas antes de iniciar Nginx
       command: ["/bin/sh", "-c"]
       args:
         - |
@@ -27,47 +21,42 @@ spec:
           <html lang="es">
           <head>
             <meta charset="UTF-8">
-            <title>S08 | AP6 - ConfigMaps & Secrets</title>
+            <title>S08 - Estado de Configuracion</title>
             <style>
               body { font-family: system-ui, sans-serif; background: #0f172a; color: #f8fafc; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-              .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 28px; width: 520px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
-              h1 { font-size: 1.3rem; margin-top: 0; color: #38bdf8; }
-              .badge { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: bold; background: #0284c7; color: white; }
-              .section { margin-top: 18px; padding: 14px; border-radius: 8px; background: #0f172a; }
-              .section h2 { font-size: 0.9rem; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 0.05em; }
-              .cm h2 { color: #4ade80; }
-              .sec h2 { color: #f43f5e; }
-              .row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #1e293b; font-family: monospace; font-size: 0.95rem; }
+              .card { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 24px; width: 480px; }
+              h1 { font-size: 1.2rem; margin-top: 0; color: #38bdf8; }
+              .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; background: #0284c7; color: white; }
+              .section { margin-top: 16px; padding: 12px; border-radius: 6px; background: #0f172a; }
+              .section h2 { font-size: 0.85rem; margin: 0 0 8px 0; text-transform: uppercase; color: #94a3b8; }
+              .row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #1e293b; font-family: monospace; font-size: 0.9rem; }
               .row:last-child { border-bottom: none; }
-              .key { color: #94a3b8; }
-              .val { color: #f8fafc; font-weight: bold; }
+              .key { color: #cbd5e1; }
+              .val { color: #4ade80; font-weight: bold; }
             </style>
           </head>
           <body>
             <div class="card">
-              <h1>🚀 Backend Conectado en Kubernetes</h1>
+              <h1>Estado del Servicio Backend</h1>
               <p>Pod: <code>$(hostname)</code> | Namespace: <span class="badge">demo-config</span></p>
-              <div class="section cm">
-                <h2>📦 Desde ConfigMap (app-config)</h2>
-                <div class="row"><span class="key">ENVIRONMENT:</span><span class="val">${ENVIRONMENT}</span></div>
-                <div class="row"><span class="key">DB_HOST:</span><span class="val">${DB_HOST}</span></div>
-                <div class="row"><span class="key">APP_PORT:</span><span class="val">${APP_PORT}</span></div>
+              <div class="section">
+                <h2>ConfigMap (app-config)</h2>
+                <div class="row"><span class="key">ENVIRONMENT</span><span class="val">${ENVIRONMENT}</span></div>
+                <div class="row"><span class="key">DB_HOST</span><span class="val">${DB_HOST}</span></div>
+                <div class="row"><span class="key">APP_PORT</span><span class="val">${APP_PORT}</span></div>
               </div>
-              <div class="section sec">
-                <h2>🔐 Desde Secret (db-credentials)</h2>
-                <div class="row"><span class="key">DB_USER:</span><span class="val">${DB_USER}</span></div>
-                <div class="row"><span class="key">DB_PASS (Inyectada):</span><span class="val">✅ Cargada en memoria (${#DB_PASS} caracteres)</span></div>
+              <div class="section">
+                <h2>Secret (db-credentials)</h2>
+                <div class="row"><span class="key">DB_USER</span><span class="val">${DB_USER}</span></div>
+                <div class="row"><span class="key">DB_PASS</span><span class="val">Cargada (${#DB_PASS} caracteres)</span></div>
               </div>
             </div>
           </body>
           </html>
           EOF
           nginx -g 'daemon off;'
-      # envFrom inyecta automáticamente TODAS las claves como variables de entorno
       envFrom:
-        # 1. Inyección de configuración pública (APP_PORT, DB_HOST, ENVIRONMENT)
         - configMapRef:
             name: app-config
-        # 2. Inyección de credenciales sensibles (DB_USER, DB_PASS)
         - secretRef:
             name: db-credentials
