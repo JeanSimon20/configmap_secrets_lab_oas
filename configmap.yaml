@@ -1,0 +1,21 @@
+# ==============================================================================
+# ARCHIVO: configmap.yaml (Equivalente declarativo del Paso 2)
+# NOTA: En la sesión de Live-Coding (Paso 2) este recurso se crea vía CLI con:
+#   kubectl create configmap app-config \
+#     --from-literal=APP_PORT=8080 \
+#     --from-literal=DB_HOST=mongo-service \
+#     --from-literal=ENVIRONMENT=production \
+#     -n demo-config
+# ==============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: demo-config
+  labels:
+    app: backend-demo
+data:
+  APP_PORT: "8080"
+  DB_HOST: "mongo-service"
+  ENVIRONMENT: "production"
+

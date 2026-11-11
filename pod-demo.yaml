@@ -1,0 +1,28 @@
+# ==============================================================================
+# ARCHIVO: pod-demo.yaml
+# DESCRIPCIÓN: Pod de demostración (Live-Coding) que inyecta todas las claves
+#              de un ConfigMap y un Secret simultáneamente usando envFrom.
+# ==============================================================================
+apiVersion: v1
+kind: Pod
+metadata:
+  name: backend-demo-pod
+  namespace: demo-config
+  labels:
+    app: backend-demo
+    role: api
+spec:
+  containers:
+    - name: app-container
+      image: nginx:alpine
+      ports:
+        - containerPort: 8080
+      # envFrom inyecta automáticamente TODAS las claves como variables de entorno
+      envFrom:
+        # 1. Inyección de configuración pública (APP_PORT, DB_HOST, ENVIRONMENT)
+        - configMapRef:
+            name: app-config
+        # 2. Inyección de credenciales sensibles (DB_USER, DB_PASS)
+        - secretRef:
+            name: db-credentials
+
